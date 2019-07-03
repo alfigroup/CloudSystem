@@ -28,7 +28,14 @@ namespace CloudSystem
             while (true)
             {
                 string val = Console.ReadLine();
-                Program.getSystem().RunCommand(val);
+                if(!val.StartsWith("."))
+                {
+                    Program.getSystem().servers[Program.getSystem().consoleServer].Input(val);
+                }
+                else
+                {
+                    Program.getSystem().RunCommand(val);
+                }
             }
         }
     }
@@ -98,13 +105,16 @@ namespace CloudSystem
         public void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
             var line = outLine.Data;
-            Console.WriteLine("[Server] " + line);
+            if (Program.getSystem().consoleServer == id)
+            {
+                Console.WriteLine("[Server] [" + id + "] " + line);
+            }
             //logFile.WriteLineAsync(line);
         }
 
         public void ExitHandler(object sendingProcess, EventArgs outLine)
         {
-            Console.WriteLine("[Server] Server exited");
+            Console.WriteLine("[Server] [" + id + "] Server exited");
             Program.getSystem().StopServer(id);
         }
     }

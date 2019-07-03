@@ -14,6 +14,7 @@ namespace CloudSystem
 
         public MySqlConnection conn;
         public Dictionary<int, Server> servers = new Dictionary<int, Server>();
+        public int consoleServer = 1;
 
         public System()
         {
@@ -81,7 +82,7 @@ namespace CloudSystem
                     }
                     if (servers.ContainsKey(id))
                     {
-                        Console.WriteLine("[Server] Command on Server " + id);
+                        Console.WriteLine("[Cloud] Command on Server " + id);
                         servers[id].Input(command);
                     }
                 }
@@ -95,16 +96,22 @@ namespace CloudSystem
                     int id = int.Parse(inputList[1]);
                     StopServer(id);
                 }
+                if (inputList[0].Equals(".console"))
+                {
+                    int id = int.Parse(inputList[1]);
+                    consoleServer = id;
+                }
             }
             else if(inputList.Length == 1)
             {
-                Console.WriteLine("[Server] .cmd (ServerID) (Command)");
-                Console.WriteLine("[Server] .start (ServerID)");
-                Console.WriteLine("[Server] .stop (ServerID)");
+                Console.WriteLine("[Cloud] .cmd (ServerID) (Command)");
+                Console.WriteLine("[Cloud] .start (ServerID)");
+                Console.WriteLine("[Cloud] .stop (ServerID)");
+                Console.WriteLine("[Cloud] .console (ServerID)");
             }
             else
             {
-                Console.WriteLine("[Server] Please use .help for a list of commands!");
+                Console.WriteLine("[Cloud] Please use .help for a list of commands!");
             }
         }
 

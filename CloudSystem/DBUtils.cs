@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace CloudSystem
 {
@@ -16,11 +17,12 @@ namespace CloudSystem
 
         public static MySqlConnection GetDBConnection()
         {
-            string host = "alfigroup.eu";
+            string text = File.ReadAllText("./mysql.login");
+            string host = text.Split(':')[0];
             int port = 3306;
-            string database = "videria"; 
-            string username = "videria";
-            string password = "I05961p8ATEl72gS";
+            string database = text.Split(':')[1]; 
+            string username = text.Split(':')[2];
+            string password = text.Split(':')[3];
 
             return GetDBConnection(host, port, database, username, password);
         }

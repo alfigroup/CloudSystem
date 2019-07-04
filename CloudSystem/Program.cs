@@ -102,7 +102,7 @@ namespace CloudSystem
                 var fs = new FileStream(path + "/server.log", FileMode.Create);
                 fs.Dispose();
             }
-            //logFile = new StreamWriter(path + "/server.log", true);
+            logFile = new StreamWriter(path + "/server.log", false);
         }
 
         public void Start()
@@ -119,12 +119,19 @@ namespace CloudSystem
 
         public void Stop()
         {
-            if(!process.HasExited)
+            /*
+             * // SUGGESTION: Checker8763
+             * 1. Get Stop Command from MySQL
+             * 2. Send that to Process
+             * 3. If Process didn't terminate after a minute kill it!
+             */
+            if (!process.HasExited)
             {
                 process.Kill();
             }
         }
 
+        // Pass through command to Process
         public void Input(string line)
         {
             process.StandardInput.WriteLine(line);
@@ -137,7 +144,8 @@ namespace CloudSystem
             {
                 Console.WriteLine("[Server] [" + id + "] " + line);
             }
-            //logFile.WriteLineAsync(line);
+            logFile.WriteLine(line);
+            logFile.Flush();
         }
 
         public void ExitHandler(object sendingProcess, EventArgs outLine)

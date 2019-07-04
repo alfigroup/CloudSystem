@@ -39,7 +39,7 @@ namespace CloudSystem
                 while (data.Read())
                 {
                     int id = data.GetInt32(0);
-                    if (data.GetBoolean(7))
+                    if (data.GetBoolean(6))
                     {
                         startServer.Add(id);
                         //new Thread(() => StartServer(id)).Start();
@@ -99,15 +99,28 @@ namespace CloudSystem
                 if (inputList[0].Equals(".console"))
                 {
                     int id = int.Parse(inputList[1]);
-                    consoleServer = id;
+                    if(servers.ContainsKey(id))
+                    {
+                        consoleServer = id;
+                    }
                 }
             }
             else if(inputList.Length == 1)
             {
-                Console.WriteLine("[Cloud] .cmd (ServerID) (Command)");
-                Console.WriteLine("[Cloud] .start (ServerID)");
-                Console.WriteLine("[Cloud] .stop (ServerID)");
-                Console.WriteLine("[Cloud] .console (ServerID)");
+                if (inputList[0].Equals(".list"))
+                {
+                    foreach(Server server in servers.Values)
+                    {
+                        Console.WriteLine("[Cloud] Server " + server.getID());
+                    }
+                } else
+                {
+                    Console.WriteLine("[Cloud] .cmd (ServerID) (Command)");
+                    Console.WriteLine("[Cloud] .start (ServerID)");
+                    Console.WriteLine("[Cloud] .stop (ServerID)");
+                    Console.WriteLine("[Cloud] .console (ServerID)");
+                    Console.WriteLine("[Cloud] .list");
+                }
             }
             else
             {
@@ -117,44 +130,74 @@ namespace CloudSystem
 
         public void StartServer(int id)
         {
+            if(servers.ContainsKey(id))
+            {
+                Console.WriteLine("[Server] Server already started");
+                return;
+            }
             try
             {
-                MySqlDataReader data = DBUtils.ExecuteCommand(conn, "SELECT * FROM server WHERE id = '" + id + "'");
-                if (data.Read())
+                MySqlDataReader server_data = DBUtils.ExecuteCommand(conn, "SELECT * FROM server WHERE id = '" + id + "'");
+                if (server_data.Read())
                 {
-                    Console.WriteLine("[Server] Starting Server " + data.GetInt32(0));
-                    String filename = data.GetString(3);
-                    String arguments = data.GetString(4);
-                    String path = data.GetString(5);
-                    data.Close();
+                    Console.WriteLine("[Server] Starting Server " + server_data.GetInt32(0));
+                    String filename = server_data.GetString(3);
+                    String path = server_data.GetString(4);
+                    int game = server_data.GetInt32(5);
+                    int ram = server_data.GetInt32(7);
+                    double cpu = server_data.GetDouble(8);
+                    String exec_user = server_data.GetString(9);
+                    int port = server_data.GetInt32(10);
+                    server_data.Close();
 
-                    var process = new Process
+                    Console.WriteLine("[Server] Select game data");
+
+                    MySqlDataReader game_data = DBUtils.ExecuteCommand(conn, "SELECT * FROM games WHERE id = '" + game + "'");
+                    if(game_data.Read())
                     {
-                        StartInfo = new ProcessStartInfo
+                        String startCommand = game_data.GetString(2);
+                        String stopCommand = game_data.GetString(3);
+                        game_data.Close();
+
+                        startCommand = startCommand.Replace("%ram%", "" + ram);
+                        startCommand = startCommand.Replace("%cpu%", "" + cpu);
+                        startCommand = startCommand.Replace("%filename%", "" + filename);
+                        startCommand = startCommand.Replace("%port%", "" + port);
+
+                        var process = new Process
                         {
-                            FileName = filename,
-                            Arguments = arguments,
-                            UseShellExecute = false, //Test
-                            RedirectStandardInput = true,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            CreateNoWindow = true,
-                            WorkingDirectory = path,
+                            StartInfo = new ProcessStartInfo
+                            {
+                                FileName = "su",
+                                Arguments = "-s /bin/bash " + exec_user + " -c " + '"' + startCommand + '"',
+                                UseShellExecute = false, //Test
+                                RedirectStandardInput = true,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                CreateNoWindow = true,
+                                WorkingDirectory = path,
 
-                        }
-                    };
+                            }
+                        };
 
-                    DBUtils.ExecuteCommand(conn, "UPDATE server SET started = '1' WHERE id = '" + id + "'").Close();
+                        DBUtils.ExecuteCommand(conn, "UPDATE server SET started = '1' WHERE id = '" + id + "'").Close();
 
-                    // ProcessManager.ThrottleProcess(process.Id, 1);
+                        // ProcessManager.ThrottleProcess(process.Id, 1);
 
-                    Server server = new Server(process, id, path);
-                    new Thread(() => server.Start()).Start();
+                        Server server = new Server(process, id, path);
+                        new Thread(() => server.Start()).Start();
 
-                    servers.Add(id, server);
+                        servers.Add(id, server);
+                    }
+                    else
+                    {
+                        game_data.Close();
+                        Console.WriteLine("[Server] Starting Server " + id + " failed!");
+                    }
                 }
                 else
                 {
+                    server_data.Close();
                     Console.WriteLine("[Server] Starting Server " + id + " failed ! (Server not found)");
                 }
             } catch (Exception e)
@@ -169,10 +212,19 @@ namespace CloudSystem
         {
             if (servers.ContainsKey(id))
             {
+                Console.WriteLine("[Server] Stopping server " + id);
+                if(consoleServer == id)
+                {
+                    consoleServer = -1;
+                }
                 servers[id].Stop();
                 servers.Remove(id);
 
                 DBUtils.ExecuteCommand(conn, "UPDATE server SET started = '0' WHERE id = '" + id + "'").Close();
+            }
+            else
+            {
+                Console.WriteLine("[Server] Server not running!" );
             }
         }
     }

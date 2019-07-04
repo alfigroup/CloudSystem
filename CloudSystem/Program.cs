@@ -150,8 +150,12 @@ namespace CloudSystem
 
         public void ExitHandler(object sendingProcess, EventArgs outLine)
         {
-            Console.WriteLine("[Server] [" + id + "] Server exited");
             Program.getSystem().StopServer(id);
+        }
+
+        public int getID()
+        {
+            return id;
         }
     }
 }

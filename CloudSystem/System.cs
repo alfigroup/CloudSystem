@@ -184,7 +184,7 @@ namespace CloudSystem
 
                         // ProcessManager.ThrottleProcess(process.Id, 1);
 
-                        Server server = new Server(process, id, path);
+                        Server server = new Server(process, id, path, stopCommand);
                         new Thread(() => server.Start()).Start();
 
                         servers.Add(id, server);
@@ -217,7 +217,7 @@ namespace CloudSystem
                 {
                     consoleServer = -1;
                 }
-                servers[id].Stop();
+                new Thread(() => servers[id].Stop()).Start();
                 servers.Remove(id);
 
                 DBUtils.ExecuteCommand(conn, "UPDATE server SET started = '0' WHERE id = '" + id + "'").Close();

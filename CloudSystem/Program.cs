@@ -79,6 +79,7 @@ namespace CloudSystem
         private int id;
         private StreamWriter logFile;
         private string path;
+        private string[] stopCommands;
 
         // SUGGESTION by Checker8763 (Block comment!)
         /*
@@ -92,11 +93,12 @@ namespace CloudSystem
          * 
          */
 
-        public Server(Process process, int id, string path)
+        public Server(Process process, int id, string path, string rawStopCommand)
         {
             this.process = process;
             this.id = id;
             this.path = path;
+            this.stopCommands = rawStopCommand.Split('\n');
             if (!File.Exists(path + "/server.log"))
             {
                 var fs = new FileStream(path + "/server.log", FileMode.Create);
@@ -125,6 +127,16 @@ namespace CloudSystem
              * 2. Send that to Process
              * 3. If Process didn't terminate after a minute kill it!
              */
+
+            foreach (string command in stopCommands)
+            {
+                Input(command);
+                Thread.Sleep(1000);
+            }
+
+            Thread.Sleep(15000);
+            
+
             if (!process.HasExited)
             {
                 process.Kill();
